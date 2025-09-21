@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>连锁超市运营分析看板</title>
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+tailwind.config = {
+theme: {
+extend: {
+colors: {
+primary: '#3b82f6',
+secondary: '#6366f1'
+},
+borderRadius: {
+'none': '0px',
+'sm': '4px',
+DEFAULT: '8px',
+'md': '12px',
+'lg': '16px',
+'xl': '20px',
+'2xl': '24px',
+'3xl': '32px',
+'full': '9999px',
+'button': '8px'
+}
+}
+}
+}
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<style>
+:where([class^="ri-"])::before {
+content: "\f3c2";
+}
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+<div class="p-6 max-w-full">
+<!-- 维度筛选区域 -->
+<div class="bg-white rounded-lg shadow-sm p-4 mb-6 h-16 flex items-center justify-between">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="text-sm font-medium text-gray-700">销售日期:</span>
+<div class="relative">
+<input type="date" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+</div>
+<span class="text-sm text-gray-500">至</span>
+<div class="relative">
+<input type="date" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-sm font-medium text-gray-700">门店:</span>
+<div class="relative">
+<button class="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white flex items-center gap-2 min-w-32 justify-between hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+<span>全部门店</span>
+<div class="w-4 h-4 flex items-center justify-center">
+<i class="ri-arrow-down-s-line text-gray-400"></i>
+</div>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-sm font-medium text-gray-700">品类:</span>
+<div class="relative">
+<button id="categoryDropdownBtn" class="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white flex items-center gap-2 min-w-32 justify-between hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+<span id="selectedCategories">全部品类</span>
+<div class="w-4 h-4 flex items-center justify-center">
+<i class="ri-arrow-down-s-line text-gray-400"></i>
+</div>
+</button>
+<div id="categoryDropdown" class="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden">
+<div class="p-2 space-y-1 max-h-[400px] overflow-y-auto">
+<div class="category-group">
+<div class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-parent w-4 h-4 text-primary border-gray-300 rounded" value="生鲜食品">
+<span class="text-sm font-medium text-gray-700">生鲜食品</span>
+</div>
+<div class="ml-6 space-y-1 mt-1">
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="生鲜食品" value="水果">
+<span class="text-sm text-gray-600">水果</span>
+</label>
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="生鲜食品" value="蔬菜">
+<span class="text-sm text-gray-600">蔬菜</span>
+</label>
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="生鲜食品" value="肉禽蛋">
+<span class="text-sm text-gray-600">肉禽蛋</span>
+</label>
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="生鲜食品" value="水产">
+<span class="text-sm text-gray-600">水产</span>
+</label>
+</div>
+</div>
+<div class="category-group">
+<div class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-parent w-4 h-4 text-primary border-gray-300 rounded" value="休闲食品">
+<span class="text-sm font-medium text-gray-700">休闲食品</span>
+</div>
+<div class="ml-6 space-y-1 mt-1">
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="休闲食品" value="饼干糕点">
+<span class="text-sm text-gray-600">饼干糕点</span>
+</label>
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="休闲食品" value="坚果炒货">
+<span class="text-sm text-gray-600">坚果炒货</span>
+</label>
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="休闲食品" value="糖果巧克力">
+<span class="text-sm text-gray-600">糖果巧克力</span>
+</label>
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="休闲食品" value="膨化食品">
+<span class="text-sm text-gray-600">膨化食品</span>
+</label>
+</div>
+</div>
+<div class="category-group">
+<div class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-parent w-4 h-4 text-primary border-gray-300 rounded" value="酒水饮料">
+<span class="text-sm font-medium text-gray-700">酒水饮料</span>
+</div>
+<div class="ml-6 space-y-1 mt-1">
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="酒水饮料" value="白酒">
+<span class="text-sm text-gray-600">白酒</span>
+</label>
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="酒水饮料" value="啤酒">
+<span class="text-sm text-gray-600">啤酒</span>
+</label>
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="酒水饮料" value="果汁饮料">
+<span class="text-sm text-gray-600">果汁饮料</span>
+</label>
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="酒水饮料" value="碳酸饮料">
+<span class="text-sm text-gray-600">碳酸饮料</span>
+</label>
+</div>
+</div>
+<div class="category-group">
+<div class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-parent w-4 h-4 text-primary border-gray-300 rounded" value="日用百货">
+<span class="text-sm font-medium text-gray-700">日用百货</span>
+</div>
+<div class="ml-6 space-y-1 mt-1">
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="日用百货" value="纸品">
+<span class="text-sm text-gray-600">纸品</span>
+</label>
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="日用百货" value="洗护">
+<span class="text-sm text-gray-600">洗护</span>
+</label>
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="日用百货" value="清洁用品">
+<span class="text-sm text-gray-600">清洁用品</span>
+</label>
+<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
+<input type="checkbox" class="category-checkbox w-4 h-4 text-primary border-gray-300 rounded" data-parent="日用百货" value="家居用品">
+<span class="text-sm text-gray-600">家居用品</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="bg-primary text-white px-4 py-1.5 rounded-button text-sm font-medium hover:bg-primary/90 !rounded-button whitespace-nowrap">
+应用筛选
+</button>
+<button class="border border-gray-300 text-gray-700 px-4 py-1.5 rounded-button text-sm font-medium hover:bg-gray-50 !rounded-button whitespace-nowrap">
+重置
+</button>
+<button class="flex items-center gap-1.5 border border-gray-300 text-gray-700 px-4 py-1.5 rounded-button text-sm font-medium hover:bg-gray-50 !rounded-button whitespace-nowrap">
+<i class="ri-download-line"></i>
+导出明细
+</button>
+</div>
+</div>
+<!-- 主体内容区域 -->
+<div class="grid grid-cols-3 gap-6 h-[calc(100vh-200px)]">
+<!-- 经营建议 -->
+<div class="bg-white rounded-lg shadow-sm p-6">
+<div class="flex items-center gap-2 mb-4">
+<div class="w-6 h-6 flex items-center justify-center">
+<i class="ri-brain-line text-primary text-lg"></i>
+</div>
+<h3 class="text-lg font-semibold text-gray-900">经营建议</h3>
+</div>
+<div class="space-y-2.5 max-h-80 overflow-y-auto">
+<div class="p-2.5 bg-red-50 border-l-4 border-red-400 rounded">
+<div class="flex items-start gap-2">
+<div class="w-4 h-4 flex items-center justify-center mt-0.5">
+<i class="ri-alert-line text-red-500 text-sm"></i>
+</div>
+<div>
+<p class="text-sm font-medium text-red-800">库存风险预警</p>
+<p class="text-xs text-red-700 mt-1">生鲜品类中有 23 个 SKU 临期库存过高，建议及时促销清理</p>
+</div>
+</div>
+</div>
+<div class="p-2.5 bg-red-50 border-l-4 border-red-400 rounded">
+<div class="flex items-start gap-2">
+<div class="w-4 h-4 flex items-center justify-center mt-0.5">
+<i class="ri-alert-line text-red-500 text-sm"></i>
+</div>
+<div>
+<p class="text-sm font-medium text-red-800">库存风险预警</p>
+<p class="text-xs text-red-700 mt-1">饮料品类中有 18 个 SKU 库存不足，存在缺货风险</p>
+</div>
+</div>
+</div>
+<div class="p-2.5 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+<div class="flex items-start gap-2">
+<div class="w-4 h-4 flex items-center justify-center mt-0.5">
+<i class="ri-time-line text-yellow-500 text-sm"></i>
+</div>
+<div>
+<p class="text-sm font-medium text-yellow-800">滞销品汰换</p>
+<p class="text-xs text-yellow-700 mt-1">日用品类中 15 个商品连续 30 天零销售，建议考虑下架或替换</p>
+</div>
+</div>
+</div>
+<div class="p-2.5 bg-green-50 border-l-4 border-green-400 rounded">
+<div class="flex items-start gap-2">
+<div class="w-4 h-4 flex items-center justify-center mt-0.5">
+<i class="ri-trending-up-line text-green-500 text-sm"></i>
+</div>
+<div>
+<p class="text-sm font-medium text-green-800">增长机会</p>
+<p class="text-xs text-green-700 mt-1">休闲食品销量环比增长 25%，建议增加采购量和货架陈列</p>
+</div>
+</div>
+</div>
+<div class="p-2.5 bg-blue-50 border-l-4 border-blue-400 rounded">
+<div class="flex items-start gap-2">
+<div class="w-4 h-4 flex items-center justify-center mt-0.5">
+<i class="ri-user-line text-blue-500 text-sm"></i>
+</div>
+<div>
+<p class="text-sm font-medium text-blue-800">客户体验优化</p>
+<p class="text-xs text-blue-700 mt-1">华强北店客退率较高，主要原因是商品质量问题，需重点关注</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 交易大盘 -->
+<div class="bg-white rounded-lg shadow-sm p-6">
+<div class="flex items-center gap-2 mb-4">
+<div class="w-6 h-6 flex items-center justify-center">
+<i class="ri-line-chart-line text-primary text-lg"></i>
+</div>
+<h3 class="text-lg font-semibold text-gray-900">交易大盘</h3>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">销售额</p>
+<p class="text-2xl font-bold text-gray-900">¥2,847,392</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">+12.5%</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">销售量</p>
+<p class="text-2xl font-bold text-gray-900">18,429</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">+8.3%</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">订单数</p>
+<p class="text-2xl font-bold text-gray-900">3,247</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-down-line text-red-500 text-xs"></i>
+</div>
+<span class="text-xs text-red-500">-2.1%</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">动销商品数</p>
+<p class="text-2xl font-bold text-gray-900">1,892</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">+5.7%</span>
+</div>
+</div>
+</div>
+<div class="border-t pt-4">
+<div class="flex gap-2 mb-3">
+<button id="trendBtn" class="px-3 py-1 text-xs bg-primary text-white rounded-full">趋势</button>
+<button id="categoryBtn" class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full">品类占比</button>
+<button id="storeBtn" class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full">门店排名</button>
+</div>
+<div id="salesTrendChart" class="h-40 flex items-center justify-center"></div>
+</div>
+</div>
+<!-- 流量转化 -->
+<div class="bg-white rounded-lg shadow-sm p-6">
+<div class="flex items-center gap-2 mb-4">
+<div class="w-6 h-6 flex items-center justify-center">
+<i class="ri-bar-chart-box-line text-primary text-lg"></i>
+</div>
+<h3 class="text-lg font-semibold text-gray-900">流量转化</h3>
+</div>
+<div class="space-y-4">
+<div class="relative bg-gradient-to-r from-yellow-50/80 to-yellow-50/30 p-4 rounded-lg w-full">
+<div class="flex justify-between items-center">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<p class="text-sm text-gray-500">曝光用户数</p>
+<div class="flex items-center gap-1 bg-green-50 px-2 py-0.5 rounded">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs font-medium text-green-600">+5.2%</span>
+</div>
+</div>
+<p class="text-2xl font-bold text-gray-900">45,280</p>
+</div>
+<div class="text-right">
+<p class="text-sm font-medium text-gray-600 mb-2">点击率</p>
+<div class="flex items-center justify-end gap-2">
+<span class="text-xl font-semibold text-gray-900">28.4%</span>
+<div class="flex items-center bg-green-50 px-2 py-0.5 rounded">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs font-medium text-green-600">+2.1%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="relative bg-gradient-to-r from-red-50/80 to-red-50/30 p-4 rounded-lg w-[85%]">
+<div class="flex justify-between items-center">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<p class="text-sm text-gray-500">访问用户数</p>
+<div class="flex items-center gap-1 bg-red-50 px-2 py-0.5 rounded">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-down-line text-red-500 text-xs"></i>
+</div>
+<span class="text-xs font-medium text-red-600">-1.8%</span>
+</div>
+</div>
+<p class="text-2xl font-bold text-gray-900">12,847</p>
+</div>
+<div class="text-right">
+<p class="text-sm font-medium text-gray-600 mb-2">访购率</p>
+<div class="flex items-center justify-end gap-2">
+<span class="text-xl font-semibold text-gray-900">25.3%</span>
+<div class="flex items-center bg-green-50 px-2 py-0.5 rounded">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs font-medium text-green-600">+3.5%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="relative bg-gradient-to-r from-blue-50/80 to-blue-50/30 p-4 rounded-lg w-[70%]">
+<div class="flex justify-between items-center">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1">
+<p class="text-sm text-gray-500">支付用户数</p>
+<div class="flex items-center gap-1 bg-green-50 px-2 py-0.5 rounded">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs font-medium text-green-600">+4.7%</span>
+</div>
+</div>
+<p class="text-2xl font-bold text-gray-900">3,247</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 库存周转 -->
+<div class="bg-white rounded-lg shadow-sm p-6">
+<div class="flex items-center gap-2 mb-4">
+<div class="w-6 h-6 flex items-center justify-center">
+<i class="ri-stack-line text-primary text-lg"></i>
+</div>
+<h3 class="text-lg font-semibold text-gray-900">库存周转</h3>
+</div>
+<div class="grid grid-cols-3 gap-4 mb-4">
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">动销率</p>
+<p class="text-2xl font-bold text-gray-900">85.6%</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">+2.3%</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">售罄率</p>
+<p class="text-2xl font-bold text-gray-900">92.3%</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-down-line text-red-500 text-xs"></i>
+</div>
+<span class="text-xs text-red-500">-1.5%</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">库存周转率</p>
+<p class="text-2xl font-bold text-gray-900">4.8</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">+0.5</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">临期SKU数</p>
+<p class="text-2xl font-bold text-red-600">127</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-red-500 text-xs"></i>
+</div>
+<span class="text-xs text-red-500">+12.4%</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">缺货SKU数</p>
+<p class="text-2xl font-bold text-orange-600">43</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-down-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">-8.5%</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">库存周转天数</p>
+<p class="text-2xl font-bold text-gray-900">76</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-down-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">-3.2</span>
+</div>
+</div>
+</div>
+<div class="border-t pt-4">
+<div class="flex gap-2 mb-3">
+<button id="expiringBtn" class="px-3 py-1 text-xs bg-primary text-white rounded-full">临期SKU</button>
+<button id="outOfStockBtn" class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full">缺货SKU</button>
+</div>
+<div id="inventoryChart" class="h-40"></div>
+</div>
+</div>
+<!-- 售后体验 -->
+<div class="bg-white rounded-lg shadow-sm p-6">
+<div class="flex items-center gap-2 mb-4">
+<div class="w-6 h-6 flex items-center justify-center">
+<i class="ri-customer-service-2-line text-primary text-lg"></i>
+</div>
+<h3 class="text-lg font-semibold text-gray-900">售后体验</h3>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-4">
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">客退商品数</p>
+<p class="text-2xl font-bold text-red-600">89</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-down-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">-4.3%</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">客退件数</p>
+<p class="text-2xl font-bold text-red-600">127</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-red-500 text-xs"></i>
+</div>
+<span class="text-xs text-red-500">+2.4%</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">客退金额</p>
+<p class="text-2xl font-bold text-red-600">¥12,847</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-red-500 text-xs"></i>
+</div>
+<span class="text-xs text-red-500">+1.8%</span>
+</div>
+</div>
+<div class="text-center">
+<p class="text-sm text-gray-500 mb-1">客退率</p>
+<p class="text-2xl font-bold text-red-600">2.3%</p>
+<div class="flex items-center justify-center gap-1 mt-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-down-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">-0.5%</span>
+</div>
+</div>
+</div>
+<div class="border-t pt-4">
+<div class="flex gap-2 mb-3">
+<button id="returnReasonBtn" class="px-3 py-1 text-xs bg-primary text-white rounded-full">原因分布</button>
+<button id="storeReturnBtn" class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full">门店占比</button>
+</div>
+<div id="returnAnalysisChart" class="h-40"></div>
+</div>
+</div>
+<!-- 商品榜单 -->
+<div class="bg-white rounded-lg shadow-sm p-6">
+<div class="flex items-center gap-2 mb-4">
+<div class="w-6 h-6 flex items-center justify-center">
+<i class="ri-trophy-line text-primary text-lg"></i>
+</div>
+<h3 class="text-lg font-semibold text-gray-900">商品榜单</h3>
+</div>
+<div class="flex gap-2 mb-4 flex-wrap">
+<button id="hotSalesBtn" class="px-3 py-1 text-xs bg-primary text-white rounded-full">热销榜</button>
+<button id="profitBtn" class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full">利润榜</button>
+<button id="growthBtn" class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full">增长榜</button>
+<button id="inventoryBtn" class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full">库存榜</button>
+<button id="slowMovingBtn" class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full">滞销榜</button>
+</div>
+<div id="rankingList" class="space-y-3">
+<div class="flex items-center p-2 hover:bg-gray-50 rounded transition-colors">
+<div class="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center mr-3">
+<span class="text-xs font-semibold text-primary">1</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="text-sm font-medium text-gray-900">百威啤酒 500ml</span>
+<span class="text-sm font-semibold text-primary">¥2,392</span>
+</div>
+<div class="flex items-center justify-between mt-1">
+<span class="text-xs text-gray-500">销量 1,284 件</span>
+<div class="flex items-center gap-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">+12.5%</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center p-2 hover:bg-gray-50 rounded transition-colors">
+<div class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mr-3">
+<span class="text-xs font-semibold text-gray-600">2</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="text-sm font-medium text-gray-900">农夫山泉 550ml</span>
+<span class="text-sm font-semibold text-primary">¥2,937</span>
+</div>
+<div class="flex items-center justify-between mt-1">
+<span class="text-xs text-gray-500">销量 982 件</span>
+<div class="flex items-center gap-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">+8.3%</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center p-2 hover:bg-gray-50 rounded transition-colors">
+<div class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mr-3">
+<span class="text-xs font-semibold text-gray-600">3</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="text-sm font-medium text-gray-900">乐事薯片 原味</span>
+<span class="text-sm font-semibold text-primary">¥2,584</span>
+</div>
+<div class="flex items-center justify-between mt-1">
+<span class="text-xs text-gray-500">销量 847 件</span>
+<div class="flex items-center gap-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">+5.7%</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center p-2 hover:bg-gray-50 rounded transition-colors">
+<div class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mr-3">
+<span class="text-xs font-semibold text-gray-600">4</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="text-sm font-medium text-gray-900">可口可乐 330ml</span>
+<span class="text-sm font-semibold text-primary">¥2,147</span>
+</div>
+<div class="flex items-center justify-between mt-1">
+<span class="text-xs text-gray-500">销量 728 件</span>
+<div class="flex items-center gap-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-down-line text-red-500 text-xs"></i>
+</div>
+<span class="text-xs text-red-500">-2.1%</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center p-2 hover:bg-gray-50 rounded transition-colors">
+<div class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mr-3">
+<span class="text-xs font-semibold text-gray-600">5</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="text-sm font-medium text-gray-900">统一老坛酸菜面</span>
+<span class="text-sm font-semibold text-primary">¥1,937</span>
+</div>
+<div class="flex items-center justify-between mt-1">
+<span class="text-xs text-gray-500">销量 647 件</span>
+<div class="flex items-center gap-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-up-line text-green-500 text-xs"></i>
+</div>
+<span class="text-xs text-green-500">+3.2%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script id="salesTrendScript">
+document.addEventListener('DOMContentLoaded', function() {
+const salesChart = echarts.init(document.getElementById('salesTrendChart'));
+const trendOption = {
+animation: false,
+grid: { top: 15, right: 20, bottom: 25, left: 60 },
+xAxis: {
+type: 'category',
+data: ['06-25', '06-26', '06-27', '06-28', '06-29', '06-30', '07-01'],
+axisLine: { show: false },
+axisTick: { show: false },
+axisLabel: {
+fontSize: 10,
+color: '#666'
+}
+},
+yAxis: {
+type: 'value',
+axisLine: { show: false },
+axisTick: { show: false },
+splitLine: { lineStyle: { color: '#f0f0f0' } },
+axisLabel: {
+formatter: function(value) {
+const num = (value / 10000).toFixed(0);
+return num === '0' ? '' : num + 'w';
+},
+fontSize: 10,
+color: '#666'
+},
+min: 200000,
+max: 3000000,
+interval: 500000
+},
+series: [{
+data: [2200000, 2350000, 2180000, 2450000, 2680000, 2920000, 2847392],
+type: 'line',
+smooth: true,
+symbol: 'none',
+lineStyle: { color: 'rgba(87, 181, 231, 1)', width: 2 },
+areaStyle: {
+color: {
+type: 'linear',
+x: 0, y: 0, x2: 0, y2: 1,
+colorStops: [
+{ offset: 0, color: 'rgba(87, 181, 231, 0.1)' },
+{ offset: 1, color: 'rgba(87, 181, 231, 0.01)' }
+]
+}
+}
+}],
+tooltip: {
+trigger: 'axis',
+backgroundColor: 'rgba(255, 255, 255, 0.9)',
+borderColor: '#e5e7eb',
+textStyle: { color: '#1f2937' }
+}
+};
+const categoryOption = {
+animation: false,
+grid: { top: 0, right: 0, bottom: 0, left: 0 },
+series: [{
+type: 'pie',
+radius: ['0%', '65%'],
+center: ['50%', '50%'],
+data: [
+{ value: 35, name: '生鲜食品' },
+{ value: 28, name: '日用百货' },
+{ value: 20, name: '休闲食品' },
+{ value: 12, name: '酒水饮料' },
+{ value: 5, name: '其他品类' }
+],
+itemStyle: {
+color: function(params) {
+const colors = ['rgba(87, 181, 231, 1)', 'rgba(141, 211, 199, 1)', 'rgba(251, 191, 114, 1)', 'rgba(252, 141, 98, 1)', 'rgba(141, 160, 203, 1)'];
+return colors[params.dataIndex];
+},
+borderRadius: 4
+},
+label: {
+show: true,
+position: 'outside',
+formatter: '{b}\n{d}%',
+textStyle: { fontSize: 10 },
+alignTo: 'edge',
+margin: 5
+}
+}],
+tooltip: {
+trigger: 'item',
+backgroundColor: 'rgba(255, 255, 255, 0.9)',
+borderColor: '#e5e7eb',
+textStyle: { color: '#1f2937' }
+}
+};
+const storeOption = {
+animation: false,
+grid: { top: 15, right: 80, bottom: 0, left: 60 },
+xAxis: {
+type: 'value',
+axisLine: { show: false },
+axisTick: { show: false },
+splitLine: { show: false },
+axisLabel: { show: false }
+},
+yAxis: {
+type: 'category',
+data: ['南山店', '华强北店', '福田店', '宝安店', '龙岗店'],
+axisLine: { show: false },
+axisTick: { show: false },
+axisLabel: {
+fontSize: 10,
+color: '#666'
+}
+},
+series: [{
+data: [284.7, 256.3, 238.9, 215.6, 198.4],
+type: 'bar',
+barWidth: '60%',
+itemStyle: {
+color: 'rgba(87, 181, 231, 1)',
+borderRadius: [0, 4, 4, 0]
+},
+label: {
+show: true,
+position: 'right',
+formatter: '{@score}w\n{@rate|{@rateValue}}',
+rich: {
+rate: {
+fontSize: 10,
+color: params => {
+const rates = ['+12.5%', '-2.1%', '+8.3%', '+5.7%', '+3.2%'];
+const colors = ['#22c55e', '#ef4444', '#22c55e', '#22c55e', '#22c55e'];
+return colors[params.dataIndex];
+}
+}
+},
+formatter: function(params) {
+const rates = ['+12.5%', '-2.1%', '+8.3%', '+5.7%', '+3.2%'];
+return `${params.value}w  ${rates[params.dataIndex]}`;
+}
+}
+}],
+tooltip: {
+trigger: 'axis',
+backgroundColor: 'rgba(255, 255, 255, 0.9)',
+borderColor: '#e5e7eb',
+textStyle: { color: '#1f2937' }
+}
+};
+salesChart.setOption(trendOption);
+document.getElementById('trendBtn').addEventListener('click', function() {
+this.className = 'px-3 py-1 text-xs bg-primary text-white rounded-full';
+document.getElementById('storeBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('categoryBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+salesChart.setOption(trendOption);
+});
+document.getElementById('storeBtn').addEventListener('click', function() {
+this.className = 'px-3 py-1 text-xs bg-primary text-white rounded-full';
+document.getElementById('trendBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('categoryBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+salesChart.setOption(storeOption);
+});
+document.getElementById('categoryBtn').addEventListener('click', function() {
+this.className = 'px-3 py-1 text-xs bg-primary text-white rounded-full';
+document.getElementById('trendBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('storeBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+salesChart.setOption(categoryOption);
+});
+});
+</script>
+<script id="inventoryScript">
+document.addEventListener('DOMContentLoaded', function() {
+const inventoryChart = echarts.init(document.getElementById('inventoryChart'));
+const expiringOption = {
+animation: false,
+series: [{
+type: 'pie',
+radius: '60%',
+center: ['50%', '50%'],
+data: [
+{ value: 42, name: '华强北店' },
+{ value: 35, name: '南山店' },
+{ value: 28, name: '福田店' },
+{ value: 15, name: '宝安店' },
+{ value: 7, name: '龙岗店' }
+],
+itemStyle: {
+color: function(params) {
+const colors = ['rgba(87, 181, 231, 1)', 'rgba(141, 211, 199, 1)', 'rgba(251, 191, 114, 1)', 'rgba(252, 141, 98, 1)', 'rgba(141, 160, 203, 1)'];
+return colors[params.dataIndex];
+},
+borderRadius: 4
+},
+label: {
+show: true,
+formatter: '{b}\n{d}%',
+textStyle: { fontSize: 10 }
+}
+}],
+tooltip: {
+trigger: 'item',
+backgroundColor: 'rgba(255, 255, 255, 0.9)',
+borderColor: '#e5e7eb',
+textStyle: { color: '#1f2937' }
+}
+};
+const outOfStockOption = {
+animation: false,
+series: [{
+type: 'pie',
+radius: '60%',
+center: ['50%', '50%'],
+data: [
+{ value: 15, name: '华强北店' },
+{ value: 12, name: '南山店' },
+{ value: 8, name: '福田店' },
+{ value: 5, name: '宝安店' },
+{ value: 3, name: '龙岗店' }
+],
+itemStyle: {
+color: function(params) {
+const colors = ['rgba(87, 181, 231, 1)', 'rgba(141, 211, 199, 1)', 'rgba(251, 191, 114, 1)', 'rgba(252, 141, 98, 1)', 'rgba(141, 160, 203, 1)'];
+return colors[params.dataIndex];
+},
+borderRadius: 4
+},
+label: {
+show: true,
+formatter: '{b}\n{d}%',
+textStyle: { fontSize: 10 }
+}
+}],
+tooltip: {
+trigger: 'item',
+backgroundColor: 'rgba(255, 255, 255, 0.9)',
+borderColor: '#e5e7eb',
+textStyle: { color: '#1f2937' }
+}
+};
+inventoryChart.setOption(expiringOption);
+document.getElementById('expiringBtn').addEventListener('click', function() {
+this.className = 'px-3 py-1 text-xs bg-primary text-white rounded-full';
+document.getElementById('outOfStockBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+inventoryChart.setOption(expiringOption);
+});
+document.getElementById('outOfStockBtn').addEventListener('click', function() {
+this.className = 'px-3 py-1 text-xs bg-primary text-white rounded-full';
+document.getElementById('expiringBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+inventoryChart.setOption(outOfStockOption);
+});
+});
+</script>
+<script id="categoryDropdownScript">
+document.addEventListener('DOMContentLoaded', function() {
+const categoryBtn = document.getElementById('categoryDropdownBtn');
+const categoryDropdown = document.getElementById('categoryDropdown');
+const selectedCategoriesSpan = document.getElementById('selectedCategories');
+const parentCheckboxes = document.querySelectorAll('.category-parent');
+const childCheckboxes = document.querySelectorAll('.category-checkbox');
+let isDropdownOpen = false;
+
+categoryBtn.addEventListener('click', function(e) {
+e.stopPropagation();
+isDropdownOpen = !isDropdownOpen;
+categoryDropdown.classList.toggle('hidden', !isDropdownOpen);
+});
+
+document.addEventListener('click', function(e) {
+if (!categoryDropdown.contains(e.target) && e.target !== categoryBtn) {
+isDropdownOpen = false;
+categoryDropdown.classList.add('hidden');
+}
+});
+
+function updateSelectedCategories() {
+const selectedParents = new Set();
+const selectedChildren = new Set();
+
+childCheckboxes.forEach(checkbox => {
+if (checkbox.checked) {
+selectedChildren.add(checkbox.value);
+selectedParents.add(checkbox.dataset.parent);
+}
+});
+
+const totalSelected = selectedChildren.size;
+if (totalSelected === 0) {
+selectedCategoriesSpan.textContent = '全部品类';
+} else if (totalSelected === 1) {
+const category = Array.from(selectedChildren)[0];
+const parent = Array.from(childCheckboxes).find(cb => cb.value === category).dataset.parent;
+selectedCategoriesSpan.textContent = `${parent} - ${category}`;
+} else {
+selectedCategoriesSpan.textContent = `已选 ${totalSelected} 个品类`;
+}
+}
+
+parentCheckboxes.forEach(parentCheckbox => {
+parentCheckbox.addEventListener('change', function() {
+const parentValue = this.value;
+const childBoxes = document.querySelectorAll(`.category-checkbox[data-parent="${parentValue}"]`);
+childBoxes.forEach(childBox => {
+childBox.checked = this.checked;
+});
+updateSelectedCategories();
+});
+});
+
+childCheckboxes.forEach(checkbox => {
+checkbox.addEventListener('change', function() {
+const parentValue = this.dataset.parent;
+const parentCheckbox = document.querySelector(`.category-parent[value="${parentValue}"]`);
+const siblingCheckboxes = document.querySelectorAll(`.category-checkbox[data-parent="${parentValue}"]`);
+const allSiblingsChecked = Array.from(siblingCheckboxes).every(cb => cb.checked);
+const anySiblingChecked = Array.from(siblingCheckboxes).some(cb => cb.checked);
+
+parentCheckbox.checked = allSiblingsChecked;
+parentCheckbox.indeterminate = anySiblingChecked && !allSiblingsChecked;
+
+updateSelectedCategories();
+});
+});
+});
+</script>
+<script id="returnReasonScript">
+document.addEventListener('DOMContentLoaded', function() {
+const returnAnalysisChart = echarts.init(document.getElementById('returnAnalysisChart'));
+const rankingData = {
+hotSales: [
+{ name: '百威啤酒 500ml', value: 3847, amount: 1284, rate: '+12.5%', trend: 'up', skuId: 'BW10086', image: 'https://readdy.ai/api/search-image?query=A%20bottle%20of%20Budweiser%20beer%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=1&orientation=squarish' },
+{ name: '农夫山泉 550ml', value: 2937, amount: 982, rate: '+8.3%', trend: 'up', skuId: 'NF20231', image: 'https://readdy.ai/api/search-image?query=A%20bottle%20of%20Nongfu%20Spring%20mineral%20water%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=2&orientation=squarish' },
+{ name: '乐事薯片 原味', value: 2584, amount: 847, rate: '+5.7%', trend: 'up', skuId: 'LS30475', image: 'https://readdy.ai/api/search-image?query=A%20bag%20of%20Lays%20original%20potato%20chips%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=3&orientation=squarish' },
+{ name: '可口可乐 330ml', value: 2147, amount: 728, rate: '-2.1%', trend: 'down', skuId: 'KL40892', image: 'https://readdy.ai/api/search-image?query=A%20can%20of%20Coca%20Cola%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=4&orientation=squarish' },
+{ name: '统一老坛酸菜面', value: 1937, amount: 647, rate: '+3.2%', trend: 'up', skuId: 'TY50367', image: 'https://readdy.ai/api/search-image?query=A%20package%20of%20Unified%20Pickled%20Cabbage%20Noodles%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=5&orientation=squarish' }
+],
+profit: [
+{ name: '茅台飞天 500ml', value: 12847, amount: 284, rate: '+15.2%', trend: 'up', skuId: 'MT60583', image: 'https://readdy.ai/api/search-image?query=A%20bottle%20of%20Maotai%20Flying%20Fairy%20baijiu%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=6&orientation=squarish' },
+{ name: '五粮液 浓香型', value: 8937, amount: 382, rate: '+10.3%', trend: 'up', skuId: 'WL70129', image: 'https://readdy.ai/api/search-image?query=A%20bottle%20of%20Wuliangye%20baijiu%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=7&orientation=squarish' },
+{ name: '泸州老窖 特曲', value: 6584, amount: 447, rate: '+7.7%', trend: 'up', skuId: 'LZ80746', image: 'https://readdy.ai/api/search-image?query=A%20bottle%20of%20Luzhou%20Laojiao%20Tequ%20baijiu%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=8&orientation=squarish' },
+{ name: '百威啤酒 500ml', value: 3847, amount: 1284, rate: '+4.1%', trend: 'up', skuId: 'BW10086', image: 'https://readdy.ai/api/search-image?query=A%20bottle%20of%20Budweiser%20beer%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=1&orientation=squarish' },
+{ name: '哈根达斯 香草', value: 2937, amount: 347, rate: '-1.2%', trend: 'down', skuId: 'HG90435', image: 'https://readdy.ai/api/search-image?query=A%20cup%20of%20Haagen%20Dazs%20vanilla%20ice%20cream%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=9&orientation=squarish' }
+],
+growth: [
+{ name: '元气森林 乳茶', value: 2847, amount: 1847, rate: '+45.2%', trend: 'up', skuId: 'YQ10924', image: 'https://readdy.ai/api/search-image?query=A%20bottle%20of%20Genki%20Forest%20milk%20tea%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=10&orientation=squarish' },
+{ name: '农夫山泉 气泡水', value: 1937, amount: 1282, rate: '+38.3%', trend: 'up', skuId: 'NF20567', image: 'https://readdy.ai/api/search-image?query=A%20bottle%20of%20Nongfu%20Spring%20sparkling%20water%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=11&orientation=squarish' },
+{ name: '三只松鼠 坚果', value: 1584, amount: 947, rate: '+32.7%', trend: 'up', skuId: 'SZ30781', image: 'https://readdy.ai/api/search-image?query=A%20package%20of%20Three%20Squirrels%20mixed%20nuts%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=12&orientation=squarish' },
+{ name: '喜茶 满杯红柚', value: 1447, amount: 728, rate: '+28.1%', trend: 'up', skuId: 'XT40159', image: 'https://readdy.ai/api/search-image?query=A%20cup%20of%20Heytea%20grapefruit%20tea%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=13&orientation=squarish' },
+{ name: '良品铺子 肉脯', value: 1237, amount: 647, rate: '+25.2%', trend: 'up', skuId: 'LP50893', image: 'https://readdy.ai/api/search-image?query=A%20package%20of%20BESTORE%20dried%20meat%20snack%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=14&orientation=squarish' }
+],
+inventory: [
+{ name: '茅台飞天 500ml', value: 847392, amount: 1284, rate: '周转 284 天', trend: 'up', skuId: 'MT60583', image: 'https://readdy.ai/api/search-image?query=A%20bottle%20of%20Maotai%20Flying%20Fairy%20baijiu%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=6&orientation=squarish' },
+{ name: '五粮液 浓香型', value: 583927, amount: 982, rate: '周转 192 天', trend: 'up', skuId: 'WL70129', image: 'https://readdy.ai/api/search-image?query=A%20bottle%20of%20Wuliangye%20baijiu%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=7&orientation=squarish' },
+{ name: '泸州老窖 特曲', value: 392847, amount: 847, rate: '周转 157 天', trend: 'up', skuId: 'LZ80746', image: 'https://readdy.ai/api/search-image?query=A%20bottle%20of%20Luzhou%20Laojiao%20Tequ%20baijiu%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=8&orientation=squarish' },
+{ name: '哈根达斯 香草', value: 283947, amount: 728, rate: '周转 143 天', trend: 'up', skuId: 'HG90435', image: 'https://readdy.ai/api/search-image?query=A%20cup%20of%20Haagen%20Dazs%20vanilla%20ice%20cream%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=9&orientation=squarish' },
+{ name: '百威啤酒 500ml', value: 192837, amount: 647, rate: '周转 128 天', trend: 'up', skuId: 'BW10086', image: 'https://readdy.ai/api/search-image?query=A%20bottle%20of%20Budweiser%20beer%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=1&orientation=squarish' }
+],
+slowMoving: [
+{ name: '康师傅 老坛酸菜', value: 30, amount: 2847, rate: '30 天无销量', trend: 'down', skuId: 'KF10924', image: 'https://readdy.ai/api/search-image?query=A%20package%20of%20Master%20Kong%20Pickled%20Cabbage%20noodles%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=15&orientation=squarish' },
+{ name: '统一 老坛酸菜', value: 28, amount: 1937, rate: '28 天无销量', trend: 'down', skuId: 'TY20567', image: 'https://readdy.ai/api/search-image?query=A%20package%20of%20Unified%20Pickled%20Cabbage%20noodles%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=16&orientation=squarish' },
+{ name: '今麦郎 老坛酸菜', value: 25, amount: 1584, rate: '25 天无销量', trend: 'down', skuId: 'JM30781', image: 'https://readdy.ai/api/search-image?query=A%20package%20of%20Jinmailang%20Pickled%20Cabbage%20noodles%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=17&orientation=squarish' },
+{ name: '白象 老坛酸菜', value: 22, amount: 1447, rate: '22 天无销量', trend: 'down', skuId: 'BX40159', image: 'https://readdy.ai/api/search-image?query=A%20package%20of%20Baixiang%20Pickled%20Cabbage%20noodles%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=18&orientation=squarish' },
+{ name: '汤达人 老坛酸菜', value: 20, amount: 1237, rate: '20 天无销量', trend: 'down', skuId: 'TD50893', image: 'https://readdy.ai/api/search-image?query=A%20package%20of%20Soup%20Master%20Pickled%20Cabbage%20noodles%20with%20a%20clean%20white%20background%2C%20professional%20product%20photography%2C%20high%20resolution%2C%20commercial%20quality&width=80&height=80&seq=19&orientation=squarish' }
+]
+};
+function updateRankingList(type) {
+const data = rankingData[type];
+let html = '';
+data.forEach((item, index) => {
+html += `
+<div class="flex items-center p-2 hover:bg-gray-50 rounded transition-colors">
+<div class="w-6 h-6 ${index === 0 ? 'bg-primary/10' : 'bg-gray-100'} rounded-full flex items-center justify-center mr-3">
+<span class="text-xs font-semibold ${index === 0 ? 'text-primary' : 'text-gray-600'}">${index + 1}</span>
+</div>
+<div class="w-10 h-10 rounded overflow-hidden mr-3">
+<img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover">
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-gray-900">${item.name}</span>
+<span class="text-xs text-gray-400">SKU: ${item.skuId}</span>
+</div>
+<span class="text-sm font-semibold text-primary">¥${item.value.toLocaleString()}</span>
+</div>
+<div class="flex items-center justify-between mt-1">
+<span class="text-xs text-gray-500">${type === 'inventory' || type === 'slowMoving' ? `库存 ${item.amount.toLocaleString()} 件` : `销量 ${item.amount.toLocaleString()} 件`}</span>
+<div class="flex items-center gap-1">
+<div class="w-3 h-3 flex items-center justify-center">
+<i class="ri-arrow-${item.trend}-line text-${item.trend === 'up' ? 'green' : 'red'}-500 text-xs"></i>
+</div>
+<span class="text-xs text-${item.trend === 'up' ? 'green' : 'red'}-500">${item.rate}</span>
+</div>
+</div>
+</div>
+</div>
+`;
+});
+document.getElementById('rankingList').innerHTML = html;
+}
+document.getElementById('hotSalesBtn').addEventListener('click', function() {
+this.className = 'px-3 py-1 text-xs bg-primary text-white rounded-full';
+document.getElementById('profitBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('growthBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+updateRankingList('hotSales');
+});
+document.getElementById('profitBtn').addEventListener('click', function() {
+this.className = 'px-3 py-1 text-xs bg-primary text-white rounded-full';
+document.getElementById('hotSalesBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('growthBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+updateRankingList('profit');
+});
+document.getElementById('growthBtn').addEventListener('click', function() {
+this.className = 'px-3 py-1 text-xs bg-primary text-white rounded-full';
+document.getElementById('hotSalesBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('profitBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('inventoryBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('slowMovingBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+updateRankingList('growth');
+});
+document.getElementById('inventoryBtn').addEventListener('click', function() {
+this.className = 'px-3 py-1 text-xs bg-primary text-white rounded-full';
+document.getElementById('hotSalesBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('profitBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('growthBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('slowMovingBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+updateRankingList('inventory');
+});
+document.getElementById('slowMovingBtn').addEventListener('click', function() {
+this.className = 'px-3 py-1 text-xs bg-primary text-white rounded-full';
+document.getElementById('hotSalesBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('profitBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('growthBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+document.getElementById('inventoryBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+updateRankingList('slowMoving');
+});
+updateRankingList('hotSales');
+const storeReturnOption = {
+animation: false,
+series: [{
+type: 'pie',
+radius: '60%',
+center: ['50%', '50%'],
+data: [
+{ value: 35, name: '华强北店' },
+{ value: 25, name: '南山店' },
+{ value: 20, name: '福田店' },
+{ value: 12, name: '宝安店' },
+{ value: 8, name: '龙岗店' }
+],
+itemStyle: {
+color: function(params) {
+const colors = ['rgba(87, 181, 231, 1)', 'rgba(141, 211, 199, 1)', 'rgba(251, 191, 114, 1)', 'rgba(252, 141, 98, 1)', 'rgba(141, 160, 203, 1)'];
+return colors[params.dataIndex];
+},
+borderRadius: 4
+},
+label: {
+show: true,
+formatter: '{b}\n{d}%',
+textStyle: { fontSize: 10 }
+}
+}],
+tooltip: {
+trigger: 'item',
+backgroundColor: 'rgba(255, 255, 255, 0.9)',
+borderColor: '#e5e7eb',
+textStyle: { color: '#1f2937' }
+}
+};
+const returnReasonOption = {
+animation: false,
+series: [{
+type: 'pie',
+radius: '60%',
+center: ['50%', '50%'],
+data: [
+{ value: 45, name: '质量问题' },
+{ value: 28, name: '过期变质' },
+{ value: 18, name: '包装破损' },
+{ value: 9, name: '其他' }
+],
+itemStyle: {
+color: function(params) {
+const colors = ['rgba(87, 181, 231, 1)', 'rgba(141, 211, 199, 1)', 'rgba(251, 191, 114, 1)', 'rgba(252, 141, 98, 1)'];
+return colors[params.dataIndex];
+},
+borderRadius: 4
+},
+label: {
+show: true,
+formatter: '{b}\n{d}%',
+textStyle: { fontSize: 10 }
+}
+}],
+tooltip: {
+trigger: 'item',
+backgroundColor: 'rgba(255, 255, 255, 0.9)',
+borderColor: '#e5e7eb',
+textStyle: { color: '#1f2937' }
+}
+};
+returnAnalysisChart.setOption(returnReasonOption);
+document.getElementById('returnReasonBtn').addEventListener('click', function() {
+this.className = 'px-3 py-1 text-xs bg-primary text-white rounded-full';
+document.getElementById('storeReturnBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+returnAnalysisChart.setOption(returnReasonOption);
+});
+document.getElementById('storeReturnBtn').addEventListener('click', function() {
+this.className = 'px-3 py-1 text-xs bg-primary text-white rounded-full';
+document.getElementById('returnReasonBtn').className = 'px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded-full';
+returnAnalysisChart.setOption(storeReturnOption);
+});
+});
+</script>
+</body>
+</html>
